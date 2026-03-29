@@ -14,17 +14,6 @@
 
 You enter details about a house — size, location, age, condition — and the model returns an estimated market price with a confidence range. It's built the way a real ML pipeline should be: training and inference share the exact same preprocessing logic, encodings are computed without data leakage, and the app is deployed publicly so anyone can use it.
 
----
-
-## 🖥️ Live Demo
-
-**👉 [Try it here](https://your-app-url.streamlit.app)**
-
-![App Screenshot](screenshot.png)
-> *(Replace with an actual screenshot once deployed)*
-
----
-
 ## 🧠 The ML Pipeline
 
 ### Data
@@ -155,27 +144,71 @@ Simple `groupby().mean()` encodes each training row using its own price, creatin
 **Why pin `TRAINING_COLUMNS` explicitly in `app.py`?**
 sklearn's `StandardScaler` validates column names and order. Without an explicit reindex, any column added during experimentation silently misaligns the feature matrix. Pinning the list makes mismatches fail loudly and immediately.
 
-**What didn't work:**
-- `luxury_loc = zip_target_enc × log_sqft_living` — caused overfitting, removed
-- `area_premium = log_sqft_living × zip_freq` — added bias without improving generalisation, commented out
+---
+
+## 🗑️ Features That Were Cut — And Why
+
+This is the part most tutorials skip. Not every feature idea works, and knowing *why* something fails is just as important as knowing what to build. Here are the two features that were designed, implemented, tested — and then removed.
+
+---
+
+### ❌ `luxury_loc = zip_target_enc × log_sqft_living`
+
+**The idea:**
+Location and size are the two biggest price drivers in real estate. The intuition here was to combine them into a single interaction term — a house that is both large *and* in an expensive zipcode should command a disproportionately higher premium than either factor alone. `zip_target_enc` carries the neighbourhood's average log-price, and `log_sqft_living` carries the size signal. Multiplying them should give the model a single number that captures "big house in an expensive area."
+
+```python
+X_train["luxury_loc"] = X_train["zip_target_enc"] * X_train["log_sqft_living"]
+X_test["luxury_loc"]  = X_test["zip_target_enc"]  * X_test["log_sqft_living"]
+```
+
+**Why it caused overfitting:**
+The problem is that `zip_target_enc` is already a compressed version of the target (`y_train`). Multiplying it with `log_sqft_living` creates a feature that is highly correlated with the target *and* highly correlated with other features already in the model (`log_sqft_living` exists separately, `zip_freq` exists separately). XGBoost started leaning heavily on `luxury_loc` because it was such a strong signal — but that signal was essentially the target re-encoded in a new form. The model memorised training patterns rather than learning generalisable relationships. Train RMSE dropped, but CV RMSE got worse. Classic overfitting signature.
+
+**The deeper issue — manual interaction terms in tree models:**
+Even tree-based models like XGBoost can suffer when you manually create interaction terms that already exist implicitly. XGBoost builds interactions by splitting on multiple features across tree depth — it can learn `zip × size` effects naturally. Adding the product explicitly doesn't give it new information; it gives it a shortcut that happens to be noisier than the individual features it was derived from.
+
+**Verdict:** Removed entirely. The model generalises better when location and size speak for themselves.
+
+---
+
+### ❌ `area_premium = log_sqft_living × zip_freq`
+
+**The idea:**
+`zip_freq` encodes how frequently houses sell in a zipcode — a proxy for neighbourhood demand and desirability. A large house in a high-demand area should be worth more than the sum of its parts. `area_premium` was designed to capture this: living space weighted by how sought-after its location is.
+
+```python
+X_train["area_premium"] = X_train["log_sqft_living"] * X_train["zip_freq"]
+X_test["area_premium"]  = X_test["log_sqft_living"]  * X_test["zip_freq"]
+```
+
+**Why it added bias without improving generalisation:**
+Unlike `luxury_loc`, this feature didn't cause dramatic overfitting — it caused something subtler: **systematic bias**. The issue is that `zip_freq` measures *transaction volume*, not *price level*. A high-frequency zipcode just means a lot of houses sold there — it could be a popular affordable suburb just as easily as a premium neighbourhood. Multiplying transaction volume by house size creates a feature that correlates with market activity, not market value. The model started treating large houses in busy markets as systematically more valuable regardless of actual price level — a directional error that didn't cancel out across the dataset.
+
+**Why bias is sometimes worse than variance:**
+Overfitting (high variance) shows up clearly in the train/CV gap and gets caught during tuning. Bias is quieter — it shifts predictions consistently in the wrong direction and can hide in aggregate metrics. On error analysis, predictions for large houses in high-volume zipcodes were systematically too high, while large houses in lower-volume zipcodes were systematically too low. That asymmetric pattern is the bias signature.
+
+**What would have worked instead:**
+The right interaction here is `zip_target_enc × log_sqft_living` (price level × size) — but that's exactly what `luxury_loc` tried and failed at due to overfitting. Both features were attempting to capture the same real-world effect from different angles, and both ran into the same fundamental problem: when two features already exist in the model independently, manually engineering their product rarely helps and often hurts. Let the trees find the interaction on their own.
+
+**Verdict:** Commented out. Both generalisation and error distribution improved after removal.
 
 ---
 
 ## 🔮 What I'd Do Next
 
 - [ ] Add SHAP value explanations so users can see *why* the model predicted a given price
-- [ ] Retrain on a larger, more recent dataset (Zillow API / Redfin)
-- [ ] Replace the uncertainty band with a proper quantile regression model
+- [ ] Retrain on a larger, more recent dataset 
 - [ ] Add a map view showing comparable sold listings near the predicted price
 
 ---
 
 ## 👤 Author
 
-**Suryansh**
-- 📧 your.email@example.com
-- 💼 [LinkedIn](https://linkedin.com/in/yourprofile)
-- 🐙 [GitHub](https://github.com/yourusername)
+**Suryansh Sharma**
+- 📧 sharmasuryansh7197@gmail.com
+- 💼 [LinkedIn](https://www.linkedin.com/in/suryansh-sharma-4376073a6/))
+- 🐙 [GitHub](https://github.com/suryansh-spec)
 
 ---
 
