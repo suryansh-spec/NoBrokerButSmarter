@@ -2,6 +2,12 @@
 
 > An end-to-end machine learning web app that predicts Seattle-area house prices using XGBoost — with a focus on clean feature engineering, leak-free encoding, and a live Streamlit interface.
 
+- Applied **target encoding after train-test split** to prevent data leakage
+- Engineered **zipcode-based pricing intelligence**
+- Focused on **feature engineering over model complexity**
+- Built a **complete ML pipeline**, not just a notebook
+- Deployed as an **interactive Streamlit app**
+
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://your-app-url.streamlit.app)
 &nbsp;
 ![Python](https://img.shields.io/badge/Python-3.10-blue?logo=python)
