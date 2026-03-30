@@ -82,27 +82,6 @@ upper  = prediction × factor
 
 This gives an interpretable ~30–40% confidence band that honestly reflects model uncertainty.
 
----
-
-## 🗂️ Project Structure
-
-```
-house-price-predictor/
-│
-├── app.py                  # Streamlit app — UI + inference pipeline
-├── clean_pipeline.ipynb    # Full training notebook
-│
-├── model.pkl               # Trained GridSearchCV pipeline
-├── zip_mean.pkl            # K-Fold smoothed zipcode→price map
-├── zip_freq.pkl            # Zipcode frequency encoding map
-├── luxury_threshold.pkl    # 90th percentile sqft (for is_luxury)
-├── known_zipcodes.pkl      # Valid zipcodes for the UI dropdown
-│
-└── requirements.txt        # Python dependencies
-```
-
----
-
 ## 🚀 Run It Locally
 
 **1. Clone the repo**
