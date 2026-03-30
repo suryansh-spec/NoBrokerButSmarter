@@ -10,9 +10,8 @@ zip_freq = pickle.load(open("zip_freq.pkl", "rb"))
 luxury_threshold = pickle.load(open("luxury_threshold.pkl", "rb"))
 known_zipcodes = pickle.load(open("known_zipcodes.pkl", "rb"))  # FIX 3: was "zipcodes.pkl"
 
-# -------------------------------
-# Feature Engineering — matches notebook exactly
-# -------------------------------
+
+# Feature Engineering
 def create_features(df):
     df = df.copy()
 
@@ -72,9 +71,7 @@ def preprocess(df):
     return df
 
 
-# -------------------------------
 # UI
-# -------------------------------
 st.title("House Price Predictor for properties in Washington and King Country, USA (XGBoost Edition)")
 st.sidebar.header("Input Features")
 
